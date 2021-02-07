@@ -1,16 +1,17 @@
 #!/bin/bash
+# Variables for node determination
+hdbSettingsLoc="/hana/shared/HN1/HDB03"
+# Variables for azacsnap
 azacsnapDataConfig="HN1Config.json"
 azacsnapLogBConfig="HN1Config.json"
 azacsnapSharedConfig="HN1Shared.json"
-# Prefixes for ANF and HANA snapshots
 dataPrefix="HN1DataHrly"
 logBPrefix="HN1LogBk20min"
 sharedPrefix="HN1SharedDly"
-# Retentions for snapshots
 dataRetent=12
 logBRetent=48
 sharedRetent=2
-#Variables for azcopy
+# Variables for azcopy
 azcopyLoc="/usr/sap/HN1/home/azcopy/"
 data1src="/hana/data/HN1/mnt00001/.snapshot"
 data2src="/hana/data/HN1/mnt00002/.snapshot"
@@ -26,8 +27,8 @@ ps1=$(ssh $1@$2 -- ps -ef | egrep 'hdbnameserver|hdbindexserver|hdbxsengine' | g
 if [[ " ${ps1[@]} " =~ "hdbnameserver" ]]
 then
 echo "Name server is running on the first node, let's read nodes' current roles..."
-masterNode=$(ssh hn1adm@hana1 -- cat /usr/sap/HN1/SYS/global/hdb/custom/config/nameserver.ini | grep 'active_master =' | awk '{print $3}' | cut -d : -f 1)
-standByNode=$(ssh hn1adm@hana1 -- cat /usr/sap/HN1/SYS/global/hdb/custom/config/nameserver.ini | grep 'standby =' | awk '{print $3}')
+masterNode=$(ssh $1@$2 -- "cd $hdbSettingsLoc;./HDBSettings.sh landscapeHostConfiguration.py |  awk -F '|' '{print \$2,\$14}' | grep master | awk '{print \$1}'")
+standByNode=$(ssh $1@$2 -- "cd $hdbSettingsLoc;./HDBSettings.sh landscapeHostConfiguration.py |  awk -F '|' '{print \$2,\$14}' | grep standby | awk '{print \$1}'")
 echo "Master  Node: "$masterNode
 echo "StandBy Node: "$standByNode
 else
@@ -36,8 +37,8 @@ else
  if [[ " ${ps1[@]} " =~ "hdbnameserver" ]]
  then
   echo "Name server is running on the second node, let's read nodes' current roles..."
-  masterNode=$(ssh hn1adm@hana1 -- cat /usr/sap/HN1/SYS/global/hdb/custom/config/nameserver.ini | grep 'active_master =' | awk '{print $3}' | cut -d : -f 1)
-  standByNode=$(ssh hn1adm@hana1 -- cat /usr/sap/HN1/SYS/global/hdb/custom/config/nameserver.ini | grep 'standby =' | awk '{print $3}')
+  masterNode=$(ssh $1@$2 -- "cd $hdbSettingsLoc;./HDBSettings.sh landscapeHostConfiguration.py |  awk -F '|' '{print \$2,\$14}' | grep master | awk '{print \$1}'")
+  standByNode=$(ssh $1@$2 -- "cd $hdbSettingsLoc;./HDBSettings.sh landscapeHostConfiguration.py |  awk -F '|' '{print \$2,\$14}' | grep standby | awk '{print \$1}'")
   echo "Master  Node: "$masterNode
   echo "StandBy Node: "$standByNode
  else
@@ -48,14 +49,14 @@ fi
 echo "Executing the selected tool: "$5 "for the selected volume: "$6 "..."
 if [[ $5 = "azcopy" ]]
 then
- if [[ $6 = "data" ]] 
+ if [[ $6 = "data" ]]
  then
   echo "Starting offloading the Data Snapshots in /hana/data/<SID>mnt0000x to the storage account using the stand-by node "$standByNode"."
-  ssh $1@$standByNode "cd $azcopyLoc; ./azcopy login --identity; ./azcopy sync $data1src $saBlobUrl/$data1BlobLoc --recursive=true; ./azcopy sync $data2src $saBlobUrl/$data2BlobLoc --recursive=true" 
+  ssh $1@$standByNode "cd $azcopyLoc; ./azcopy login --identity; ./azcopy sync $data1src $saBlobUrl/$data1BlobLoc --recursive=true; ./azcopy sync $data2src $saBlobUrl/$data2BlobLoc --recursive=true"
   echo "aztools>azcopy offloading complete"
  elif [[ $6 = "logbackup" ]]
  then
-  echo "Starting offloading the Log Backups in the /backup to the storage account using the stand-by node "$standByNode"." 
+  echo "Starting offloading the Log Backups in the /backup to the storage account using the stand-by node "$standByNode"."
   ssh $1@$standByNode "cd $azcopyLoc; ./azcopy login --identity; ./azcopy sync $logbackupsrc $saBlobUrl/$logBackupBlobLoc --recursive=true"
   echo "aztools>azcopy offloading complete"
  elif [[ $6 = "shared" ]]
