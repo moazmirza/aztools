@@ -51,17 +51,17 @@ then
  if [[ $6 = "data" ]] 
  then
   echo "Starting offloading the Data Snapshots in /hana/data/<SID>mnt0000x to the storage account using the stand-by node "$standByNode"."
-  ssh $1@$standByNode 'cd $azcopyLoc; ./azcopy login --identity; ./azcopy sync $data1src $saBlobUrl/$data1BlobLoc --recursive=true; ./azcopy sync $data2src $saBlobUrl/$data2BlobLoc --recursive=true' 
+  ssh $1@$standByNode "cd $azcopyLoc; ./azcopy login --identity; ./azcopy sync $data1src $saBlobUrl/$data1BlobLoc --recursive=true; ./azcopy sync $data2src $saBlobUrl/$data2BlobLoc --recursive=true" 
   echo "aztools>azcopy offloading complete"
  elif [[ $6 = "logbackup" ]]
  then
   echo "Starting offloading the Log Backups in the /backup to the storage account using the stand-by node "$standByNode"." 
-  ssh $1@$standByNode 'cd $azcopyLoc; ./azcopy login --identity; ./azcopy sync $logbackupsrc $saBlobUrl/$logBackupBlobLoc --recursive=true'
+  ssh $1@$standByNode "cd $azcopyLoc; ./azcopy login --identity; ./azcopy sync $logbackupsrc $saBlobUrl/$logBackupBlobLoc --recursive=true"
   echo "aztools>azcopy offloading complete"
  elif [[ $6 = "shared" ]]
  then
   echo "Starting offloading the /hana/shared snapshots to the storage account using the stand-by node "$standByNode"."
-  ssh $1@$standByNode 'cd $azcopyLoc; ./azcopy login --identity; ./azcopy sync $sharedsrc $saBlobUrl/$sharedBlobLoc --recursive=true' 
+  ssh $1@$standByNode "cd $azcopyLoc; ./azcopy login --identity; ./azcopy sync $sharedsrc $saBlobUrl/$sharedBlobLoc --recursive=true"
   echo "aztools>azcopy offloading complete"
  else
   echo "Please select the correct choice for aztools execution. $1 is <sidadm>, $2 is node1, $3 is node2, $4 is node3, $5 is azcopy|azacsnap, $6 is data|logbackup|shared"
